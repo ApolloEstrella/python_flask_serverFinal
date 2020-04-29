@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request, session, make_response, render_templa
 from functools import wraps
 import jwt
 import datetime
+from api.api import Authors, Movies
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'JustDemonstrating'
 
@@ -11,8 +13,8 @@ def check_for_token(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
         token = request.args.get('token')
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
+        #if 'x-access-token' in request.headers:
+        #    token = request.headers['x-access-token']
         if not token:
             return jsonify({'message': 'Missing Token'}), 403
         try:
@@ -22,14 +24,18 @@ def check_for_token(func):
         return func(*args, **kwargs)
     return wrapped
 
-@app.route('/public')
-def public():
-    return '<h1>Anyone can view this</h1>'
-
-@app.route('/auth')
+@app.route('/authors', methods=['GET'])
 @check_for_token
-def authorised():
-    return 'This is only viewable with a token'
+def authors():
+    myresult = Authors.allAuthors()
+    return jsonify(myresult)
+
+
+@app.route('/movies', methods=['GET'])
+@check_for_token
+def movies():
+    myresult = Movies.allMovies()
+    return jsonify(myresult)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -37,7 +43,7 @@ def login():
     if auth.username == 'a' and auth.password == 'b':
         token = jwt.encode({
             'user': auth.username,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
         },
             app.config['SECRET_KEY'])
         return jsonify({'token': token.decode('utf-8')})
@@ -47,3 +53,4 @@ def login():
 
 if __name__ == '__main__':
     app.run(debug=True)
+ 
